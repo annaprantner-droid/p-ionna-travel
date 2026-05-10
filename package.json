@@ -1,0 +1,30 @@
+{
+  "name": "p-ionna-travel",
+  "private": true,
+  "version": "0.1.0",
+  "description": "P-Ionna Travel — plan, book and manage trips with a personalized AI travel assistant.",
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "install:all": "npm install && npm install --workspace backend && npm install --workspace frontend",
+    "dev": "npm-run-all --parallel dev:backend dev:frontend",
+    "dev:backend": "npm run dev --workspace backend",
+    "dev:frontend": "npm run dev --workspace frontend",
+    "build": "npm run build --workspace backend && npm run build --workspace frontend",
+    "start": "npm-run-all --parallel start:backend start:frontend",
+    "start:backend": "npm run start --workspace backend",
+    "start:frontend": "npm run preview --workspace frontend",
+    "db:migrate": "npm run db:migrate --workspace backend",
+    "db:seed": "npm run db:seed --workspace backend",
+    "db:reset": "npm run db:reset --workspace backend",
+    "test": "npm-run-all test:backend test:frontend",
+    "test:backend": "npm run test --workspace backend",
+    "test:frontend": "npm run test --workspace frontend",
+    "lint": "echo 'add eslint as needed'"
+  },
+  "devDependencies": {
+    "npm-run-all": "^4.1.5"
+  }
+}
