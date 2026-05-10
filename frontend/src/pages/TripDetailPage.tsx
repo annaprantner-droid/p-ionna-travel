@@ -1,29 +1,29 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Pencil, Plane, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Paperclip, PenSquare, PlaneTakeoff } from "lucide-react";
 import { tripApi } from "@/services/trip.service";
-import type { TripDetail } from "@/types";
+import type { Booking, TripDetail } from "@/types";
 import { Spinner } from "@/components/ui/Spinner";
-import { Button } from "@/components/ui/Button";
-import { ExpenseList } from "@/features/wallet/ExpenseList";
-import { ExpenseFormModal } from "@/features/wallet/ExpenseFormModal";
 import { TripFormModal } from "@/features/wallet/TripFormModal";
-import { useWalletStore } from "@/store/wallet.store";
-import { formatCurrency, formatDate } from "@/utils/format";
+import { ExpenseFormModal } from "@/features/wallet/ExpenseFormModal";
+import { formatTime } from "@/utils/format";
 
+/**
+ * Boarding-pass style trip detail (matches the iONNA reference).
+ * Renders the primary flight booking attached to the trip. Falls back to a
+ * lightweight placeholder when no flight booking exists yet.
+ */
 export function TripDetailPage() {
   const { id = "" } = useParams<{ id: string }>();
   const [trip, setTrip] = useState<TripDetail | null>(null);
   const [loading, setLoading] = useState(true);
-  const [expenseOpen, setExpenseOpen] = useState(false);
-  const [tripOpen, setTripOpen] = useState(false);
-  const { deleteEntry, deleteTrip } = useWalletStore();
+  const [editOpen, setEditOpen] = useState(false);
+  const [attachOpen, setAttachOpen] = useState(false);
 
   const refresh = async () => {
     setLoading(true);
     try {
-      const detail = await tripApi.get(id);
-      setTrip(detail);
+      setTrip(await tripApi.get(id));
     } finally {
       setLoading(false);
     }
@@ -42,133 +42,183 @@ export function TripDetailPage() {
     );
   }
 
-  const totalSpent = trip.walletEntries
-    .filter((e) => e.type === "EXPENSE")
-    .reduce((sum, e) => sum + e.amount, 0);
+  const flight = trip.bookings.find((b) => b.type === "FLIGHT") ?? null;
 
   return (
-    <div>
-      <div className="relative h-44 w-full bg-navy-800">
-        {trip.imageUrl && (
-          <img src={trip.imageUrl} alt={trip.name} className="h-full w-full object-cover opacity-80" />
-        )}
-        <Link
-          to="/wallet"
-          className="absolute left-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-navy-800 shadow"
+    <div className="relative flex h-full min-h-[640px] bg-white">
+      <Link
+        to="/wallet"
+        aria-label="Back to wallet"
+        className="absolute left-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-navy-800 shadow"
+      >
+        <ArrowLeft size={18} />
+      </Link>
+
+      {flight ? <BoardingPass booking={flight} tripName={trip.name} /> : <NoFlightFallback />}
+
+      <div className="pointer-events-none absolute bottom-6 right-5 flex gap-3">
+        <button
+          onClick={() => setAttachOpen(true)}
+          aria-label="Attach expense"
+          className="pointer-events-auto flex h-12 w-12 items-center justify-center rounded-full bg-navy-800 text-white shadow-lg transition hover:bg-navy-700"
         >
-          <ArrowLeft size={18} />
-        </Link>
-        <div className="absolute bottom-3 left-5 right-5 text-white">
-          <div className="text-2xl font-bold tracking-wide">{trip.name}</div>
-          <div className="text-xs uppercase tracking-wider opacity-80">
-            {trip.destination}, {trip.country} · {formatDate(trip.startDate)} → {formatDate(trip.endDate)}
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3 px-5 py-4">
-        <Stat label="Budget" value={formatCurrency(trip.budget, trip.currency)} />
-        <Stat label="Spent" value={formatCurrency(totalSpent, trip.currency)} tone="rose" />
-      </div>
-
-      <SectionHeader title="Bookings" />
-      {trip.bookings.length === 0 ? (
-        <p className="px-5 pb-2 text-sm text-slate-500">No bookings yet.</p>
-      ) : (
-        <ul className="divide-y divide-slate-200">
-          {trip.bookings.map((b) => (
-            <li key={b.id} className="flex items-center gap-3 px-5 py-3 text-sm">
-              <Plane size={18} className="text-navy-700" />
-              <div className="min-w-0 flex-1">
-                <div className="truncate font-medium text-navy-800">{b.title}</div>
-                <div className="text-xs text-slate-500">
-                  {b.airline ?? b.hotelName} · {formatDate(b.startDate)}
-                </div>
-              </div>
-              <div className="text-sm font-semibold text-navy-800">
-                {formatCurrency(b.price, b.currency)}
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      <SectionHeader
-        title="Expenses"
-        right={
-          <button
-            className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-ocean-600"
-            onClick={() => setExpenseOpen(true)}
-          >
-            <Plus size={14} /> Add
-          </button>
-        }
-      />
-      <ExpenseList
-        entries={trip.walletEntries}
-        onEdit={() => setExpenseOpen(true)}
-        onDelete={async (e) => {
-          if (confirm(`Delete "${e.title}"?`)) {
-            await deleteEntry(e.id);
-            refresh();
-          }
-        }}
-      />
-
-      <div className="flex gap-2 px-5 py-6">
-        <Button variant="secondary" fullWidth onClick={() => setTripOpen(true)}>
-          <Pencil size={14} /> Edit trip
-        </Button>
-        <Button
-          variant="danger"
-          fullWidth
-          onClick={async () => {
-            if (confirm(`Delete trip "${trip.name}"? This will unlink its expenses & bookings.`)) {
-              await deleteTrip(trip.id);
-              window.location.assign("/wallet");
-            }
-          }}
+          <Paperclip size={18} />
+        </button>
+        <button
+          onClick={() => setEditOpen(true)}
+          aria-label="Edit trip"
+          className="pointer-events-auto flex h-12 w-12 items-center justify-center rounded-full bg-navy-800 text-white shadow-lg transition hover:bg-navy-700"
         >
-          <Trash2 size={14} /> Delete
-        </Button>
+          <PenSquare size={18} />
+        </button>
       </div>
 
-      <ExpenseFormModal
-        open={expenseOpen}
-        onClose={() => {
-          setExpenseOpen(false);
-          refresh();
-        }}
-        defaultTripId={trip.id}
-      />
       <TripFormModal
-        open={tripOpen}
+        open={editOpen}
         onClose={() => {
-          setTripOpen(false);
+          setEditOpen(false);
           refresh();
         }}
         trip={trip}
       />
+      <ExpenseFormModal
+        open={attachOpen}
+        onClose={() => {
+          setAttachOpen(false);
+          refresh();
+        }}
+        defaultTripId={trip.id}
+      />
     </div>
   );
 }
 
-function Stat({ label, value, tone }: { label: string; value: string; tone?: "rose" }) {
+function BoardingPass({ booking, tripName }: { booking: Booking; tripName: string }) {
+  const date = new Date(booking.departureTime ?? booking.startDate);
+  const dayLabel = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(date);
+  const weekday = new Intl.DateTimeFormat("en-US", { weekday: "long" }).format(date);
+
+  const ticketNumber = readTicketNumber(booking.metadata);
+  const route =
+    booking.title?.includes("→") || booking.title?.includes("-")
+      ? booking.title.replace("→", "-")
+      : `${shortCode(booking.fromCity)} - ${shortCode(booking.toCity)}`;
+
   return (
-    <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
-      <div className="text-[10px] uppercase tracking-wider text-slate-500">{label}</div>
-      <div className={`mt-1 text-lg font-semibold ${tone === "rose" ? "text-rose-600" : "text-navy-800"}`}>
-        {value}
+    <>
+      <aside className="flex w-28 flex-col items-center bg-navy-800 pt-8 text-white">
+        <PlaneTakeoff size={40} strokeWidth={1.6} />
+        <div className="mt-3 h-px w-12 bg-white/70" />
+        <div className="mt-auto flex flex-col items-center pb-10 text-center leading-tight">
+          <span className="text-xl font-bold tracking-wide">{dayLabel}</span>
+          <span className="mt-1 text-sm font-light text-white/90">{weekday}</span>
+        </div>
+      </aside>
+
+      <section
+        className="flex-1 px-6 pb-24 pt-8"
+        aria-label={`Boarding pass for ${tripName}`}
+      >
+        <h1 className="text-3xl font-extrabold tracking-tight text-navy-800">{route}</h1>
+
+        <div className="mt-10 space-y-8">
+          <SegmentRow
+            label="DEPARTURE"
+            place={booking.fromCity ? `${airportFor(booking.fromCity)}, ${booking.fromCity}` : "—"}
+            time={booking.departureTime ? formatTime(booking.departureTime) : formatTime(booking.startDate)}
+          />
+          <SegmentRow
+            label="ARRIVAL"
+            place={booking.toCity ? `${airportFor(booking.toCity)}, ${countryFor(booking.toCity)}` : "—"}
+            time={
+              booking.arrivalTime
+                ? formatTime(booking.arrivalTime)
+                : booking.endDate
+                  ? formatTime(booking.endDate)
+                  : "—"
+            }
+          />
+        </div>
+
+        <div className="mt-10 flex items-baseline justify-between border-t border-slate-100 pt-6">
+          <span className="text-base font-semibold tracking-wide text-navy-800">FLIGHT NR.</span>
+          <span className="text-base font-medium text-navy-800">{booking.flightNumber ?? "—"}</span>
+        </div>
+
+        <div className="mt-6 rounded-2xl bg-slate-100 px-5 py-4">
+          <div className="text-[11px] font-medium uppercase tracking-wider text-slate-500">
+            Reservation Nr.
+          </div>
+          <div className="mt-0.5 text-lg font-semibold tracking-wide text-navy-900">
+            {booking.reference}
+          </div>
+
+          <div className="mt-4 text-[11px] font-medium uppercase tracking-wider text-slate-500">
+            Ticket Nr.
+          </div>
+          <div className="mt-0.5 text-lg font-semibold tracking-wide text-navy-900">
+            {ticketNumber ?? "—"}
+          </div>
+        </div>
+      </section>
+    </>
+  );
+}
+
+function SegmentRow({ label, place, time }: { label: string; place: string; time: string }) {
+  return (
+    <div className="flex items-start justify-between gap-4">
+      <div>
+        <div className="text-lg font-bold tracking-wide text-navy-800">{label}</div>
+        <div className="mt-0.5 text-xs text-slate-500">{place}</div>
       </div>
+      <div className="whitespace-nowrap text-lg font-semibold text-navy-800">{time}</div>
     </div>
   );
 }
 
-function SectionHeader({ title, right }: { title: string; right?: React.ReactNode }) {
+function NoFlightFallback() {
   return (
-    <div className="mt-2 flex items-center justify-between border-b border-slate-100 px-5 pb-2 pt-4">
-      <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500">{title}</h3>
-      {right}
-    </div>
+    <section className="flex flex-1 flex-col items-center justify-center px-8 text-center text-slate-500">
+      <PlaneTakeoff size={40} className="text-slate-300" />
+      <p className="mt-3 text-sm">
+        No flight booking is attached to this trip yet. Add one from the Booking tab to see your
+        boarding pass here.
+      </p>
+    </section>
   );
+}
+
+function readTicketNumber(metadata: string | null): string | null {
+  if (!metadata) return null;
+  try {
+    const parsed = JSON.parse(metadata) as { ticketNumber?: string };
+    return parsed.ticketNumber ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function shortCode(city: string | null): string {
+  if (!city) return "—";
+  return city.slice(0, 3).toUpperCase();
+}
+
+// Very small lookup so the placeholder text matches the reference; falls back
+// gracefully for any city not in the map.
+const AIRPORTS: Record<string, { airport: string; country: string }> = {
+  Singapore: { airport: "Changi Airport", country: "Singapore" },
+  Perth: { airport: "Perth Airport", country: "Australia" },
+  London: { airport: "Heathrow Airport", country: "United Kingdom" },
+  Tokyo: { airport: "Haneda Airport", country: "Japan" },
+  Sydney: { airport: "Kingsford Smith Airport", country: "Australia" },
+  Cebu: { airport: "Mactan-Cebu Airport", country: "Philippines" },
+};
+
+function airportFor(city: string): string {
+  return AIRPORTS[city]?.airport ?? `${city} Airport`;
+}
+
+function countryFor(city: string): string {
+  return AIRPORTS[city]?.country ?? city;
 }
