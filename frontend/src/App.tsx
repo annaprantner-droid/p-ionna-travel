@@ -8,11 +8,14 @@ import { ProfilePage } from "@/pages/ProfilePage";
 import { TripDetailPage } from "@/pages/TripDetailPage";
 import { BookingDetailPage } from "@/pages/BookingDetailPage";
 import { AppLayout } from "@/layouts/AppLayout";
+import { StatusBar } from "@/layouts/StatusBar";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 export default function App() {
   return (
-    <Routes>
+    <>
+      <StatusBar />
+      <Routes>
       <Route path="/" element={<LoadingPage />} />
       <Route path="/auth" element={<AuthPage />} />
       <Route
@@ -31,5 +34,6 @@ export default function App() {
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </>
   );
 }

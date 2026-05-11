@@ -15,7 +15,9 @@
       "Bash(git commit -m ' *)",
       "Bash(/tmp/gh auth *)",
       "Bash(git credential-osxkeychain *)",
-      "Bash(export GH_TOKEN=$\\(printf \"protocol=https\\\\nhost=github.com\\\\n\\\\n\")"
+      "Bash(export GH_TOKEN=$\\(printf \"protocol=https\\\\nhost=github.com\\\\n\\\\n\")",
+      "Bash(git push *)",
+      "Bash(git add *)"
     ]
   }
 }
