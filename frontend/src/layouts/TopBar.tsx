@@ -10,9 +10,6 @@ export function TopBar() {
   return (
     <div className="topbar relative">
       <Logo size={42} withWordmark={false} />
-      <div className="ml-3 flex flex-col leading-tight">
-        <span className="text-base font-bold tracking-wide">iONNA</span>
-      </div>
       <div className="ml-auto flex items-center gap-3">
         <button
           aria-label="Menu"
