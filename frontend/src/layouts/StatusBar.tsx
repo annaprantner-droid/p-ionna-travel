@@ -3,14 +3,11 @@ import { useEffect, useState } from "react";
 /**
  * iPhone-style status bar.
  *
- * Renders once at the very top of the app (fixed-position, full-width).
- * Shows the device's live local time on the left and cellular / Wi-Fi /
- * battery indicators on the right. Adapts to the background color
- * underneath via `mix-blend-mode: difference`, so the same component
- * looks correct on the navy auth/loading screens and on white content.
+ * Renders as a static, normal-flow element — mount it as the FIRST child
+ * of each layout's phone-shell container so it always sits at the very
+ * top of the mobile frame and never moves, floats, or repositions.
  *
  * Self-contained — no external icon libraries; SVGs are inline.
- * Has `pointer-events: none` so it never blocks the UI below.
  */
 export function StatusBar() {
   const time = useLiveTime();
@@ -19,8 +16,7 @@ export function StatusBar() {
   return (
     <div
       aria-hidden="true"
-      className="pointer-events-none fixed left-1/2 top-0 z-50 flex h-6 w-full max-w-md -translate-x-1/2 items-center justify-between px-6 text-[12px] font-semibold leading-none tracking-tight text-white sm:top-6"
-      style={{ mixBlendMode: "difference" }}
+      className="relative z-30 flex h-7 w-full shrink-0 items-center justify-between bg-navy-800 px-6 text-[12px] font-semibold leading-none tracking-tight text-white"
     >
       <span className="tabular-nums">{time}</span>
       <div className="flex items-center gap-1.5">
@@ -38,7 +34,6 @@ function useLiveTime() {
   const [time, setTime] = useState(() => formatHHMM(new Date()));
   useEffect(() => {
     const tick = () => setTime(formatHHMM(new Date()));
-    // Sync to the next minute boundary, then tick every minute.
     const now = new Date();
     const msToNextMinute = (60 - now.getSeconds()) * 1000 - now.getMilliseconds();
     let intervalId: ReturnType<typeof setInterval> | undefined;
@@ -70,8 +65,6 @@ type NavigatorWithBattery = Navigator & {
 };
 
 function useBatteryPercent() {
-  // Default to 100% when the Battery Status API isn't available
-  // (Safari, Firefox) — purely cosmetic in a prototype.
   const [percent, setPercent] = useState<number>(100);
 
   useEffect(() => {
@@ -124,7 +117,7 @@ function WifiIcon() {
 
 function BatteryIndicator({ percent }: { percent: number }) {
   const clamped = Math.max(0, Math.min(100, percent));
-  const fillWidth = (clamped / 100) * 18; // inner area is 18px wide
+  const fillWidth = (clamped / 100) * 18;
   return (
     <div className="flex items-center gap-1">
       <span className="text-[10px] tabular-nums opacity-90">{clamped}%</span>

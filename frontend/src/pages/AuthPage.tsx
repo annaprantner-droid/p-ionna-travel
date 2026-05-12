@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Logo } from "@/components/ui/Logo";
 import { LoginForm } from "@/features/auth/LoginForm";
 import { SignupForm } from "@/features/auth/SignupForm";
+import { StatusBar } from "@/layouts/StatusBar";
 import { cn } from "@/utils/cn";
 
 type Mode = "login" | "signup";
@@ -15,7 +16,8 @@ export function AuthPage() {
 
   return (
     <div className="min-h-screen bg-navy-900 sm:py-6">
-      <div className="mx-auto flex min-h-screen w-full max-w-md flex-col bg-navy-900 sm:min-h-[calc(100vh-3rem)] sm:rounded-3xl sm:bg-navy-900 sm:shadow-soft">
+      <div className="mx-auto flex min-h-screen w-full max-w-md flex-col overflow-hidden bg-navy-900 sm:min-h-[calc(100vh-3rem)] sm:rounded-3xl sm:bg-navy-900 sm:shadow-soft">
+        <StatusBar />
         <div className="flex flex-col items-center pt-14 text-white">
           <Logo size={140} />
           <p className="mt-4 max-w-xs text-center text-sm text-white/70">
