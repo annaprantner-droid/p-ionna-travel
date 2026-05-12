@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowLeft, Paperclip, PenSquare, PlaneTakeoff } from "lucide-react";
+import { ArrowLeft, Paperclip, PenSquare, PlaneTakeoff } from "@/components/ui/icons";
 import { useState } from "react";
 import type { Booking } from "@/types";
 import { formatTime } from "@/utils/format";

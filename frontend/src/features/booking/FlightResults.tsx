@@ -1,4 +1,4 @@
-import { Plane } from "lucide-react";
+import { Plane } from "@/components/ui/icons";
 import { useBookingStore } from "@/store/booking.store";
 import { Button } from "@/components/ui/Button";
 import type { MockFlight } from "@/types";

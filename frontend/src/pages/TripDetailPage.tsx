@@ -5,19 +5,16 @@ import {
   BedDouble,
   Car,
   ChevronRight,
-  PenSquare,
   Plane,
   ShoppingBag,
   Sparkles,
   Tickets,
   UtensilsCrossed,
-} from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+} from "@/components/ui/icons";
+import type { LucideIcon } from "@/components/ui/icons";
 import { tripApi } from "@/services/trip.service";
 import type { Booking, TripDetail, WalletEntry } from "@/types";
 import { Spinner } from "@/components/ui/Spinner";
-import { TripFormModal } from "@/features/wallet/TripFormModal";
-import { ExpenseFormModal } from "@/features/wallet/ExpenseFormModal";
 
 /**
  * Trip detail screen — vertical timeline view.
@@ -36,7 +33,7 @@ export function TripDetailPage() {
   const navigate = useNavigate();
   const [trip, setTrip] = useState<TripDetail | null>(null);
   const [loading, setLoading] = useState(true);
-  const [editorOpen, setEditorOpen] = useState<"trip" | "expense" | null>(null);
+  const [scrollY, setScrollY] = useState(0);
 
   const refresh = async () => {
     setLoading(true);
@@ -52,27 +49,42 @@ export function TripDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
+  // Track the AppLayout <main> scroll position so the hero can collapse as
+  // the user scrolls down and expand again as they scroll back up.
+  useEffect(() => {
+    const main = document.querySelector("main");
+    if (!main) return;
+    const handler = () => setScrollY(main.scrollTop);
+    main.addEventListener("scroll", handler, { passive: true });
+    return () => main.removeEventListener("scroll", handler);
+  }, []);
+
+  // Hero height interpolates between the full banner (HERO_MAX) and the
+  // compact carousel height (HERO_MIN). Sticky positioning pins it at the
+  // top of the scroll area so it never disappears off-screen.
+  const heroHeight = Math.max(HERO_MIN, HERO_MAX - scrollY);
+
   const timeline = useMemo(() => (trip ? buildTimeline(trip) : []), [trip]);
 
-  // Swipe destinations — first FLIGHT + every HOTEL chronologically.
-  const swipeDestinations = useMemo(() => {
-    if (!trip) return [] as Booking[];
-    const byDate = (a: Booking, b: Booking) =>
-      new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
-    const firstFlight = [...trip.bookings].filter((b) => b.type === "FLIGHT").sort(byDate)[0];
-    const allHotels = [...trip.bookings].filter((b) => b.type === "HOTEL").sort(byDate);
-    return [firstFlight, ...allHotels].filter((b): b is Booking => Boolean(b));
+  // Index 0 of the trip's chronologically-sorted events array. Used as the
+  // entry point for both the swipe-left gesture and the chevron button.
+  // Sorting puts FLIGHT bookings (typically the outbound flight on day 1)
+  // first within a given day, then HOTEL bookings, then wallet entries —
+  // so the entry point is never a hotel check-in or a mid-trip activity
+  // that happens to share the same calendar day.
+  const firstEventLink = useMemo(() => {
+    if (!trip) return null as string | null;
+    const events = buildSortedEvents(trip);
+    if (events.length === 0) return null;
+    const first = events[0];
+    return `/trips/${trip.id}/event/${first.kind}/${first.id}`;
   }, [trip]);
 
-  const goToNextSwipeDestination = () => {
-    if (!trip || swipeDestinations.length === 0) return;
-    const current = tripSwipeStep.get(trip.id) ?? 0;
-    const idx = current % swipeDestinations.length;
-    tripSwipeStep.set(trip.id, (idx + 1) % swipeDestinations.length);
-    navigate(`/bookings/${swipeDestinations[idx].id}`);
+  const goToFirstEvent = () => {
+    if (firstEventLink) navigate(firstEventLink);
   };
 
-  const swipeHandlers = useSwipeLeft(goToNextSwipeDestination);
+  const swipeHandlers = useSwipeLeft(goToFirstEvent);
 
   if (loading || !trip) {
     return (
@@ -87,7 +99,12 @@ export function TripDetailPage() {
       className="relative min-h-full touch-pan-y select-none bg-slate-100 pb-24"
       {...swipeHandlers}
     >
-      <Hero trip={trip} />
+      <div
+        className="sticky top-0 z-10 w-full overflow-hidden bg-navy-800"
+        style={{ height: heroHeight }}
+      >
+        <Hero trip={trip} />
+      </div>
 
       {timeline.length === 0 ? (
         <p className="px-6 py-10 text-center text-sm text-slate-500">
@@ -97,43 +114,19 @@ export function TripDetailPage() {
         <Timeline groups={timeline} />
       )}
 
-      {swipeDestinations.length > 0 && (
+      {firstEventLink && (
         <div className="flex justify-center pb-6 pt-2">
           <button
             type="button"
-            onClick={goToNextSwipeDestination}
-            aria-label="Show next booking"
-            className="flex items-center gap-1 rounded-full px-3 py-1.5 text-slate-300 transition hover:text-slate-500 focus:outline-none focus:ring-2 focus:ring-ocean-400/30"
+            onClick={goToFirstEvent}
+            aria-label="Open event details"
+            className="flex h-8 w-8 items-center justify-center rounded-full text-navy-800 transition hover:bg-navy-50 focus:outline-none focus:ring-2 focus:ring-navy-300"
           >
-            <ChevronRight size={20} strokeWidth={1.75} />
+            <ChevronRight size={18} strokeWidth={2} />
           </button>
         </div>
       )}
 
-      <button
-        onClick={() => setEditorOpen("expense")}
-        aria-label="Edit itinerary"
-        className="fixed bottom-24 right-5 z-20 flex h-12 w-12 items-center justify-center rounded-full bg-navy-800 text-white shadow-lg transition hover:bg-navy-700 sm:bottom-28"
-      >
-        <PenSquare size={18} />
-      </button>
-
-      <TripFormModal
-        open={editorOpen === "trip"}
-        onClose={() => {
-          setEditorOpen(null);
-          refresh();
-        }}
-        trip={trip}
-      />
-      <ExpenseFormModal
-        open={editorOpen === "expense"}
-        onClose={() => {
-          setEditorOpen(null);
-          refresh();
-        }}
-        defaultTripId={trip.id}
-      />
     </div>
   );
 }
@@ -141,7 +134,7 @@ export function TripDetailPage() {
 function Hero({ trip }: { trip: TripDetail }) {
   const range = `${formatHeroDate(trip.startDate)} - ${formatHeroDateWithYear(trip.endDate)}`;
   return (
-    <div className="relative h-44 w-full overflow-hidden bg-navy-800">
+    <div className="relative h-full w-full overflow-hidden bg-navy-800">
       {trip.imageUrl && (
         <img
           src={trip.imageUrl}
@@ -153,12 +146,12 @@ function Hero({ trip }: { trip: TripDetail }) {
       <Link
         to="/wallet"
         aria-label="Back"
-        className="absolute left-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-navy-800 shadow"
+        className="absolute left-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-navy-800 shadow"
       >
-        <ArrowLeft size={18} />
+        <ArrowLeft size={16} />
       </Link>
-      <div className="absolute inset-x-0 bottom-0 flex items-baseline gap-3 bg-gradient-to-t from-black/55 via-black/15 to-transparent px-5 pb-4 pt-12 text-white">
-        <h1 className="text-2xl font-extrabold tracking-wide">{trip.name.toUpperCase()}</h1>
+      <div className="absolute inset-x-0 bottom-0 flex items-baseline gap-3 bg-gradient-to-t from-black/65 via-black/25 to-transparent px-5 pb-2 pt-6 text-white">
+        <h1 className="text-xl font-extrabold tracking-wide">{trip.name.toUpperCase()}</h1>
         <span className="text-xs font-medium tracking-wider opacity-95">{range}</span>
       </div>
     </div>
@@ -237,6 +230,60 @@ function Card({ children, linkTo }: { children: React.ReactNode; linkTo?: string
     );
   }
   return <div className={cls}>{children}</div>;
+}
+
+// ─── sticky-hero sizing ─────────────────────────────────────────────────────
+
+/** Initial hero height when the timeline isn't scrolled. */
+const HERO_MAX = 176;
+/** Minimum hero height once the user has scrolled past the threshold. Matches
+ *  the compact banner used on the carousel detail screen. */
+const HERO_MIN = 64;
+
+// ─── shared sorted-events helper ────────────────────────────────────────────
+
+interface SortedEvent {
+  kind: "booking" | "entry";
+  bookingType?: string;
+  id: string;
+  date: Date;
+}
+
+/**
+ * Build the chronologically-sorted list of events for a trip. Order rules:
+ *   1. by calendar day (ascending)
+ *   2. within the same day: FLIGHT bookings, then HOTEL bookings, then
+ *      wallet entries
+ *   3. within the same day + type: by time of day
+ *
+ * Index 0 is therefore the trip's outbound flight when one exists on day 1,
+ * never a hotel check-in (which has a midnight start date) or a wallet
+ * activity entry.
+ */
+export function buildSortedEvents(trip: TripDetail): SortedEvent[] {
+  const items: SortedEvent[] = [];
+  for (const b of trip.bookings) {
+    items.push({ kind: "booking", bookingType: b.type, id: b.id, date: new Date(b.startDate) });
+  }
+  for (const e of trip.walletEntries) {
+    items.push({ kind: "entry", id: e.id, date: new Date(e.date) });
+  }
+  items.sort((a, b) => {
+    const dayA = new Date(a.date.getFullYear(), a.date.getMonth(), a.date.getDate()).getTime();
+    const dayB = new Date(b.date.getFullYear(), b.date.getMonth(), b.date.getDate()).getTime();
+    if (dayA !== dayB) return dayA - dayB;
+    const rankA = sortedEventRank(a);
+    const rankB = sortedEventRank(b);
+    if (rankA !== rankB) return rankA - rankB;
+    return a.date.getTime() - b.date.getTime();
+  });
+  return items;
+}
+
+function sortedEventRank(item: SortedEvent): number {
+  if (item.kind === "booking" && item.bookingType === "FLIGHT") return 0;
+  if (item.kind === "booking" && item.bookingType === "HOTEL") return 1;
+  return 2;
 }
 
 // ─── content builders ───────────────────────────────────────────────────────
@@ -491,17 +538,10 @@ function formatHeroDateWithYear(value: string | Date) {
 
 // ─── swipe-left hook (preserved verbatim) ───────────────────────────────────
 
-/**
- * Per-trip step counter for the swipe / chevron navigation cycle.
- *
- * Keyed by trip id. Persists across mounts of TripDetailPage (so the cycle
- * advances when the user navigates back from a booking detail) but resets
- * on a full page reload.
- */
-const tripSwipeStep = new Map<string, number>();
-
-const SWIPE_DISTANCE_THRESHOLD = 60;
-const SWIPE_VERTICAL_TOLERANCE = 60;
+// Swipe thresholds — a 50 px predominantly-horizontal leftward gesture
+// triggers navigation to the first event's detail screen.
+const SWIPE_DISTANCE_THRESHOLD = 50;
+const SWIPE_VERTICAL_TOLERANCE = 50;
 
 /**
  * Local swipe-left hook. Fires `onSwipeLeft` when the user finishes a

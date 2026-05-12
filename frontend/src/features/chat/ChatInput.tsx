@@ -1,4 +1,4 @@
-import { ArrowUp, Mic, Plus } from "lucide-react";
+import { ArrowUp, Mic, Plus } from "@/components/ui/icons";
 import { useState } from "react";
 import { useChatStore } from "@/store/chat.store";
 

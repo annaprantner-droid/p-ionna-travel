@@ -1,4 +1,4 @@
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2 } from "@/components/ui/icons";
 import type { WalletEntry } from "@/types";
 import { formatCurrency, formatDate } from "@/utils/format";
 

@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowLeft, BedDouble, PenSquare } from "lucide-react";
+import { ArrowLeft, BedDouble, PenSquare } from "@/components/ui/icons";
 import { useState } from "react";
 import type { Booking } from "@/types";
 import { ExpenseFormModal } from "@/features/wallet/ExpenseFormModal";

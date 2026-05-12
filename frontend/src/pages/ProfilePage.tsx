@@ -1,4 +1,4 @@
-import { LogOut, Mail, User as UserIcon } from "lucide-react";
+import { LogOut, Mail, User as UserIcon } from "@/components/ui/icons";
 import { useAuthStore } from "@/store/auth.store";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";

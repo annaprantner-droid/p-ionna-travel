@@ -19,16 +19,21 @@ body {
 }
 
 @layer components {
+  /*
+   * Fixed mobile mockup frame. The phone-shaped container is locked at the
+   * iPhone-style 390x844 ratio on desktop and fills the viewport on mobile.
+   * It never grows to fit content — internal scrolling happens inside <main>.
+   */
   .app-shell {
-    @apply mx-auto flex min-h-screen w-full max-w-md flex-col bg-white shadow-soft sm:my-6 sm:min-h-[calc(100vh-3rem)] sm:rounded-3xl sm:overflow-hidden;
+    @apply mx-auto flex h-screen w-full max-w-md flex-col overflow-hidden bg-white shadow-soft sm:my-6 sm:h-[844px] sm:w-[390px] sm:max-w-none sm:rounded-3xl;
   }
 
   .topbar {
-    @apply flex items-center justify-between bg-navy-800 px-5 pb-4 pt-6 text-white;
+    @apply flex shrink-0 items-center justify-between bg-navy-800 px-5 pb-4 pt-6 text-white;
   }
 
   .bottom-nav {
-    @apply sticky bottom-0 grid grid-cols-4 gap-1 border-t border-slate-200 bg-white px-2 py-2 text-[11px] uppercase tracking-wider text-slate-400;
+    @apply shrink-0 grid grid-cols-4 gap-1 border-t border-slate-200 bg-white px-2 py-2 text-[11px] uppercase tracking-wider text-slate-400;
   }
 
   .nav-item-active {

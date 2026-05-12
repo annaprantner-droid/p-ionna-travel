@@ -1,7 +1,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ArrowLeftRight } from "lucide-react";
+import { ArrowLeftRight } from "@/components/ui/icons";
 import { useBookingStore } from "@/store/booking.store";
 import { Button } from "@/components/ui/Button";
 import { useState } from "react";

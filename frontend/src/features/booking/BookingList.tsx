@@ -1,4 +1,4 @@
-import { Hotel, Plane, Trash2 } from "lucide-react";
+import { Hotel, Plane, Trash2 } from "@/components/ui/icons";
 import { useBookingStore } from "@/store/booking.store";
 import { formatCurrency, formatDate, formatTime } from "@/utils/format";
 

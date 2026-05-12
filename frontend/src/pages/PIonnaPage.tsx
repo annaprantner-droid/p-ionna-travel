@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Trash2 } from "lucide-react";
+import { Trash2 } from "@/components/ui/icons";
 import { useChatStore } from "@/store/chat.store";
 import { MessageBubble } from "@/features/chat/MessageBubble";
 import { TypingIndicator } from "@/features/chat/TypingIndicator";
