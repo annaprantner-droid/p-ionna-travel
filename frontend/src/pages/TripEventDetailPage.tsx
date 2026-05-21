@@ -1211,7 +1211,7 @@ function AttachmentPreview({
         </button>
 
         {kind === "booking" && (event as Booking).type === "FLIGHT" && (
-          <FlightTicketDocument booking={event as Booking} passengerName={passengerName} />
+          <RawFileDocument src={FLIGHT_TICKET_FILE} />
         )}
         {kind === "booking" && (event as Booking).type === "HOTEL" && (
           <HotelConfirmationDocument booking={event as Booking} passengerName={passengerName} />
@@ -1273,88 +1273,29 @@ function DocSection({
   );
 }
 
-function FlightTicketDocument({
-  booking,
-  passengerName,
-}: {
-  booking: Booking;
-  passengerName: string;
-}) {
-  const meta = parseMetadata(booking.metadata);
-  const dep = new Date(booking.departureTime ?? booking.startDate);
-  const arr = new Date(booking.arrivalTime ?? booking.endDate ?? booking.startDate);
-  const fromCode = shortCode(booking.fromCity);
-  const toCode = shortCode(booking.toCity);
+/**
+ * Path (served from /public) to the real uploaded flight ticket. Flight
+ * attachment previews render this raw file directly — no templating.
+ */
+const FLIGHT_TICKET_FILE = "/sq-ticket.png";
 
-  return (
-    <>
-      <DocHeader eyebrow="Electronic Ticket" brand={booking.airline ?? "iONNA Air"} />
-
-      <DocSection>
-        <div className="grid grid-cols-2 gap-4">
-          <DocLabelValue label="Passenger" value={passengerName} />
-          <DocLabelValue label="Status" value={(booking.status ?? "CONFIRMED").toUpperCase()} />
-          <DocLabelValue label="Booking Reference" value={booking.reference} />
-          {meta.ticketNumber && (
-            <DocLabelValue label="Ticket Number" value={meta.ticketNumber} />
-          )}
-        </div>
-      </DocSection>
-
-      <DocSection title="Flight Segment">
-        <div className="grid grid-cols-[1fr_auto_1fr] items-end gap-3">
-          <div>
-            <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
-              From
-            </div>
-            <div className="mt-1 text-2xl font-extrabold text-navy-900">{fromCode}</div>
-            <div className="text-[11px] text-slate-500">{booking.fromCity ?? "—"}</div>
-            <div className="mt-2 text-[11px] font-semibold text-navy-900">
-              {formatDocDate(dep)}
-            </div>
-            <div className="text-[18px] font-bold text-navy-900">{formatTime24(dep)}</div>
-          </div>
-          <div className="self-center pb-6 text-center text-slate-400">
-            <Plane size={20} strokeWidth={1.8} />
-            <div className="mt-1 text-[9px] uppercase tracking-widest">Direct</div>
-          </div>
-          <div className="text-right">
-            <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
-              To
-            </div>
-            <div className="mt-1 text-2xl font-extrabold text-navy-900">{toCode}</div>
-            <div className="text-[11px] text-slate-500">{booking.toCity ?? "—"}</div>
-            <div className="mt-2 text-[11px] font-semibold text-navy-900">
-              {formatDocDate(arr)}
-            </div>
-            <div className="text-[18px] font-bold text-navy-900">{formatTime24(arr)}</div>
-          </div>
-        </div>
-
-        <div className="mt-5 grid grid-cols-2 gap-y-3 gap-x-4 sm:grid-cols-4">
-          <DocLabelValue label="Flight" value={booking.flightNumber ?? "—"} />
-          <DocLabelValue label="Class" value={booking.cabinClass ?? "Economy"} />
-          <DocLabelValue label="Terminal" value={meta.terminalFrom ?? "—"} />
-          <DocLabelValue label="Terminal" value={meta.terminalTo ?? "—"} />
-        </div>
-      </DocSection>
-
-      <DocSection title="Baggage">
-        <div className="grid grid-cols-2 gap-4">
-          <DocLabelValue label="Checked" value="30 kg" />
-          <DocLabelValue label="Cabin" value="7 kg" />
-        </div>
-      </DocSection>
-
-      <DocSection title="Notes">
-        <p className="text-[11px] leading-relaxed text-slate-500">
-          Please present this e-ticket and a valid government-issued ID at check-in.
-          Online check-in opens 48 hours before departure. Changes and cancellations
-          subject to fare rules.
-        </p>
-      </DocSection>
-    </>
-  );
+/**
+ * Renders an uploaded document file as-is inside the modal: a PDF via an
+ * embedded <iframe>, or an image via a full-width <img>. The surrounding
+ * modal (dark backdrop, close button, scrollable content) is unchanged.
+ */
+function RawFileDocument({ src }: { src: string }) {
+  const isPdf = src.toLowerCase().endsWith(".pdf");
+  if (isPdf) {
+    return (
+      <iframe
+        src={src}
+        title="Ticket document"
+        className="block h-[78vh] w-full rounded-2xl"
+      />
+    );
+  }
+  return <img src={src} alt="Ticket document" className="block w-full rounded-2xl" />;
 }
 
 function HotelConfirmationDocument({
