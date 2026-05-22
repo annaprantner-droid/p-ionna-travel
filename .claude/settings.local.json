@@ -6,7 +6,18 @@
       "Bash(curl -s http://localhost:4001/api/health)",
       "Bash(curl -s -X POST http://localhost:4001/api/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"ana@ionna.travel\",\"password\":\"Password123!\"}')",
       "Bash(kill b39tl7q77 *)",
-      "Bash(pkill -f \"node dist/server.js\")"
+      "Bash(pkill -f \"node dist/server.js\")",
+      "Bash(npx tsc *)",
+      "Bash(gh pr *)",
+      "Bash(which -a gh; ls /opt/homebrew/bin/gh /usr/local/bin/gh 2>/dev/null)",
+      "Bash(brew --prefix)",
+      "Bash(brew list *)",
+      "Bash(git commit -m ' *)",
+      "Bash(/tmp/gh auth *)",
+      "Bash(git credential-osxkeychain *)",
+      "Bash(export GH_TOKEN=$\\(printf \"protocol=https\\\\nhost=github.com\\\\n\\\\n\")",
+      "Bash(git push *)",
+      "Bash(git add *)"
     ]
   }
 }

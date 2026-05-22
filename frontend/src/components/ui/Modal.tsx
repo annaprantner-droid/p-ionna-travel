@@ -1,5 +1,5 @@
 import { ReactNode, useEffect } from "react";
-import { X } from "lucide-react";
+import { X } from "@/components/ui/icons";
 import { cn } from "@/utils/cn";
 
 interface ModalProps {

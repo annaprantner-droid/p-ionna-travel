@@ -1,4 +1,4 @@
-import { Menu } from "lucide-react";
+import { Menu } from "@/components/ui/icons";
 import { useState } from "react";
 import { Logo } from "@/components/ui/Logo";
 import { useAuthStore } from "@/store/auth.store";
@@ -9,10 +9,7 @@ export function TopBar() {
 
   return (
     <div className="topbar relative">
-      <Logo size={42} withWordmark={false} />
-      <div className="ml-3 flex flex-col leading-tight">
-        <span className="text-base font-bold tracking-wide">iONNA</span>
-      </div>
+      <Logo size={60} withWordmark={false} />
       <div className="ml-auto flex items-center gap-3">
         <button
           aria-label="Menu"

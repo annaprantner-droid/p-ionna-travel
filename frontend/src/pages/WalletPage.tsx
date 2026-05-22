@@ -1,134 +1,118 @@
 import { useEffect, useState } from "react";
-import { Plus, Wallet } from "lucide-react";
+import { PenSquare, Wallet } from "@/components/ui/icons";
 import { useWalletStore } from "@/store/wallet.store";
 import { TripList } from "@/features/wallet/TripList";
 import { TripFormModal } from "@/features/wallet/TripFormModal";
-import { ExpenseList } from "@/features/wallet/ExpenseList";
-import { ExpenseFormModal } from "@/features/wallet/ExpenseFormModal";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Spinner } from "@/components/ui/Spinner";
-import { formatCurrency } from "@/utils/format";
-import type { WalletEntry } from "@/types";
+import type { Trip } from "@/types";
 
 export function WalletPage() {
-  const { trips, entries, summary, loading, load, deleteEntry } = useWalletStore();
+  const { trips, loading, load } = useWalletStore();
+  const [menuOpen, setMenuOpen] = useState(false);
   const [tripModalOpen, setTripModalOpen] = useState(false);
-  const [expenseModalOpen, setExpenseModalOpen] = useState(false);
-  const [editingExpense, setEditingExpense] = useState<WalletEntry | null>(null);
-  const [tab, setTab] = useState<"trips" | "expenses">("trips");
+  const [tripBeingEdited, setTripBeingEdited] = useState<Trip | null>(null);
 
   useEffect(() => {
     load();
   }, [load]);
 
+  // "Edit Trip" opens the editor for the most recently-starting trip in the
+  // user's wallet — the closest concept of a "currently selected" trip on the
+  // overview screen.
+  const editTrip = () => {
+    setMenuOpen(false);
+    if (trips.length === 0) {
+      setTripBeingEdited(null);
+      setTripModalOpen(true);
+      return;
+    }
+    const latest = [...trips].sort(
+      (a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime(),
+    )[0];
+    setTripBeingEdited(latest);
+    setTripModalOpen(true);
+  };
+
+  const addNewTrip = () => {
+    setMenuOpen(false);
+    setTripBeingEdited(null);
+    setTripModalOpen(true);
+  };
+
   return (
-    <div className="relative pb-24">
-      {summary && (
-        <div className="bg-navy-800 px-5 pb-5 pt-1 text-white">
-          <div className="grid grid-cols-3 gap-3 text-center">
-            <SummaryCell label="Spent" value={formatCurrency(summary.totalSpent)} tone="rose" />
-            <SummaryCell label="Income" value={formatCurrency(summary.totalIncome)} tone="emerald" />
-            <SummaryCell label="Balance" value={formatCurrency(summary.balance)} tone="ocean" />
-          </div>
-        </div>
-      )}
-
-      <div className="flex gap-1 border-b border-slate-200 bg-white px-2 text-sm font-medium">
-        {(["trips", "expenses"] as const).map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`flex-1 py-3 capitalize transition ${
-              tab === t ? "border-b-2 border-navy-800 text-navy-800" : "text-slate-400"
-            }`}
-          >
-            {t}
-          </button>
-        ))}
-      </div>
-
+    <div className="relative min-h-full pb-24">
       {loading && (
         <div className="flex justify-center py-12 text-slate-400">
           <Spinner />
         </div>
       )}
 
-      {!loading && tab === "trips" && (
-        trips.length === 0 ? (
+      {!loading &&
+        (trips.length === 0 ? (
           <EmptyState
             icon={<Wallet size={32} />}
             title="No trips yet"
-            description="Plan your next adventure to start tracking flights, hotels and expenses."
-            action={<Button onClick={() => setTripModalOpen(true)}>Create your first trip</Button>}
+            description="Plan your next adventure to start tracking flights and hotels."
+            action={<Button onClick={addNewTrip}>Create your first trip</Button>}
           />
         ) : (
           <TripList trips={trips} />
-        )
+        ))}
+
+      <button
+        onClick={() => setMenuOpen(true)}
+        aria-label="Edit menu"
+        className="absolute bottom-5 right-4 z-20 flex h-12 w-12 items-center justify-center rounded-full bg-navy-800 text-white shadow-lg transition hover:bg-navy-700"
+      >
+        <PenSquare size={18} />
+      </button>
+
+      {menuOpen && (
+        <div
+          className="absolute inset-0 z-30 flex flex-col justify-end bg-black/40"
+          onClick={() => setMenuOpen(false)}
+        >
+          <div
+            className="rounded-t-3xl bg-navy-800 px-5 pb-6 pt-5 text-white shadow-soft"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-4 text-center text-xs font-semibold uppercase tracking-widest text-white/60">
+              Trip actions
+            </div>
+            <div className="space-y-2">
+              <button
+                onClick={editTrip}
+                className="w-full rounded-xl bg-white py-3 text-sm font-semibold text-navy-800 transition hover:bg-slate-100"
+              >
+                Edit Trip
+              </button>
+              <button
+                onClick={addNewTrip}
+                className="w-full rounded-xl bg-white py-3 text-sm font-semibold text-navy-800 transition hover:bg-slate-100"
+              >
+                Add New
+              </button>
+            </div>
+            <button
+              onClick={() => setMenuOpen(false)}
+              className="mt-3 w-full rounded-xl border border-white/30 bg-navy-700 py-3 text-sm font-semibold text-white transition hover:bg-navy-600"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
       )}
 
-      {!loading && tab === "expenses" && (
-        <ExpenseList
-          entries={entries}
-          onEdit={(e) => {
-            setEditingExpense(e);
-            setExpenseModalOpen(true);
-          }}
-          onDelete={async (e) => {
-            if (confirm(`Delete "${e.title}"?`)) await deleteEntry(e.id);
-          }}
-        />
-      )}
-
-      <FabBar
-        onAddTrip={() => {
-          setTripModalOpen(true);
+      <TripFormModal
+        open={tripModalOpen}
+        onClose={() => {
+          setTripModalOpen(false);
+          setTripBeingEdited(null);
         }}
-        onAddExpense={() => {
-          setEditingExpense(null);
-          setExpenseModalOpen(true);
-        }}
+        trip={tripBeingEdited}
       />
-
-      <TripFormModal open={tripModalOpen} onClose={() => setTripModalOpen(false)} />
-      <ExpenseFormModal
-        open={expenseModalOpen}
-        onClose={() => setExpenseModalOpen(false)}
-        entry={editingExpense}
-      />
-    </div>
-  );
-}
-
-function SummaryCell({ label, value, tone }: { label: string; value: string; tone: "rose" | "emerald" | "ocean" }) {
-  const toneClass: Record<string, string> = {
-    rose: "text-rose-200",
-    emerald: "text-emerald-200",
-    ocean: "text-ocean-400",
-  };
-  return (
-    <div className="rounded-xl bg-white/5 px-2 py-3">
-      <div className="text-[10px] uppercase tracking-wider text-white/60">{label}</div>
-      <div className={`mt-1 text-base font-semibold ${toneClass[tone]}`}>{value}</div>
-    </div>
-  );
-}
-
-function FabBar({ onAddTrip, onAddExpense }: { onAddTrip: () => void; onAddExpense: () => void }) {
-  return (
-    <div className="pointer-events-none fixed bottom-24 left-0 right-0 mx-auto flex w-full max-w-md justify-end gap-2 px-5 sm:bottom-28">
-      <button
-        onClick={onAddExpense}
-        className="pointer-events-auto flex h-12 items-center gap-2 rounded-full bg-white px-4 text-sm font-semibold text-navy-800 shadow-lg ring-1 ring-slate-200 transition hover:bg-slate-50"
-      >
-        <Plus size={16} /> Expense
-      </button>
-      <button
-        onClick={onAddTrip}
-        className="pointer-events-auto flex h-12 items-center gap-2 rounded-full bg-navy-800 px-5 text-sm font-semibold text-white shadow-lg transition hover:bg-navy-700"
-      >
-        <Plus size={16} /> Trip
-      </button>
     </div>
   );
 }

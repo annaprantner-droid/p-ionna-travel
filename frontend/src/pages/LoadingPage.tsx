@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Logo } from "@/components/ui/Logo";
+import { StatusBar } from "@/layouts/StatusBar";
 import { useAuthStore } from "@/store/auth.store";
 
 const MIN_DURATION = 1100;
@@ -32,14 +33,19 @@ export function LoadingPage() {
   }, [status, token, user]);
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-navy-900 text-white">
-      <div className="animate-floaty">
-        <Logo size={220} />
-      </div>
-      <div className="mt-12 flex items-center gap-2 text-sm text-white/70">
-        <span className="h-2 w-2 animate-bounce-dot rounded-full bg-white/80 [animation-delay:0ms]" />
-        <span className="h-2 w-2 animate-bounce-dot rounded-full bg-white/80 [animation-delay:150ms]" />
-        <span className="h-2 w-2 animate-bounce-dot rounded-full bg-white/80 [animation-delay:300ms]" />
+    <div className="flex min-h-screen flex-col items-center bg-navy-900 text-white sm:py-6">
+      <div className="flex h-screen w-full max-w-md flex-col overflow-hidden bg-navy-900 sm:my-6 sm:h-[844px] sm:w-[390px] sm:max-w-none sm:rounded-3xl sm:shadow-soft">
+        <StatusBar />
+        <div className="flex flex-1 flex-col items-center justify-center">
+          <div className="animate-floaty">
+            <Logo size={319} />
+          </div>
+          <div className="mt-12 flex items-center gap-2 text-sm text-white/70">
+            <span className="h-2 w-2 animate-bounce-dot rounded-full bg-white/80 [animation-delay:0ms]" />
+            <span className="h-2 w-2 animate-bounce-dot rounded-full bg-white/80 [animation-delay:150ms]" />
+            <span className="h-2 w-2 animate-bounce-dot rounded-full bg-white/80 [animation-delay:300ms]" />
+          </div>
+        </div>
       </div>
     </div>
   );
